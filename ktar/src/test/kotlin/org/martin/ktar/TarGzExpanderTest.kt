@@ -39,4 +39,24 @@ class TarGzExpanderTest {
         assertEquals(419, extractedFiles.size)
         assertTrue(extractedFiles.find { it.name == "bbe.conf" } != null)
     }
+
+    /**
+     * Get content of files in a tar.gz file
+     */
+    @Test
+    fun handleContentOfTarGzFile() {
+        val tarGzFile = "src/test/resources/mods.d.tar.gz".toPath()
+
+        var foundBSB = false
+        TarGzExpander().handleTarGzContent(tarGzFile) { name, content ->
+            if (name.endsWith("bsb.conf")) {
+                val conf = content.readUtf8()
+                foundBSB = true
+                listOf("[BSB]", "DataPath=./modules/texts/ztext/bsb/", "ModDrv=zText", "BlockType=BOOK").forEach {
+                    assertTrue( conf.contains(it))
+                }
+            }
+        }
+        assertTrue(foundBSB)
+    }
 }
