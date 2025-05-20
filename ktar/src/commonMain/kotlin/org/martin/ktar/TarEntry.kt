@@ -44,11 +44,11 @@ class TarEntry {
         this.header = header
     }
 
-    override fun equals(it: Any?): Boolean {
-        if (it !is TarEntry) {
+    override fun equals(other: Any?): Boolean {
+        if (other !is TarEntry) {
             return false
         }
-        return header!!.name.toString() == it.header!!.name.toString()
+        return header!!.name.toString() == other.header!!.name.toString()
     }
 
     override fun hashCode(): Int {
