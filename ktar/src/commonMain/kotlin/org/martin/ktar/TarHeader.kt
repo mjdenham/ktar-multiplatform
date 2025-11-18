@@ -1,6 +1,7 @@
 package org.martin.ktar
 
 import org.martin.ktar.TarUtils.trim
+import kotlin.collections.filter
 
 /**
  * Header
@@ -132,13 +133,12 @@ class TarHeader {
          * @return The header's entry name.
          */
 		fun parseName(header: ByteArray, offset: Int, length: Int): StringBuilder {
-            val result = StringBuilder(length)
-
             val end = offset + length
-            for (i in offset..<end) {
-                if (header[i].toInt() == 0) break
-                result.append(Char(header[i].toUShort()))
-            }
+            val buffer = header
+                .copyOfRange(offset, end)
+                .filter { it != 0.toByte() }
+                .toByteArray()
+            val result = StringBuilder(buffer.decodeToString())
 
             return result
         }
