@@ -10,6 +10,8 @@ plugins {
 group = "org.martin"
 
 kotlin {
+    jvm()
+
     androidTarget {
         compilations.all {
             compileTaskProvider.configure {
