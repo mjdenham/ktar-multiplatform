@@ -41,7 +41,7 @@ kotlin {
         iosMain.dependencies {
         }
         commonMain.dependencies {
-            implementation(libs.okio)
+            api(libs.okio)
         }
         commonTest.dependencies {
             implementation(libs.junit)
