@@ -155,9 +155,11 @@ class TarHeader {
          * @return The number of bytes in a header's entry name.
          */
 		fun getNameBytes(name: StringBuilder, buf: ByteArray, offset: Int, length: Int): Int {
+            val nameBytes = name.toString().encodeToByteArray()
+
             var i = 0
-            while (i < length && i < name.length) {
-                buf[offset + i] = name[i].code.toByte()
+            while (i < length && i < nameBytes.size) {
+                buf[offset + i] = nameBytes[i]
                 ++i
             }
 
