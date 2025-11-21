@@ -134,11 +134,14 @@ class TarHeader {
          */
 		fun parseName(header: ByteArray, offset: Int, length: Int): StringBuilder {
             val end = offset + length
-            val buffer = header
-                .copyOfRange(offset, end)
-                .filter { it != 0.toByte() }
-                .toByteArray()
-            val result = StringBuilder(buffer.decodeToString())
+            val nameRange = mutableListOf<Byte>()
+
+            for (i in offset..<end) {
+                if (header[i].toInt() == 0) break
+                nameRange.add(header[i])
+            }
+
+            val result = StringBuilder(nameRange.toByteArray().decodeToString())
 
             return result
         }
