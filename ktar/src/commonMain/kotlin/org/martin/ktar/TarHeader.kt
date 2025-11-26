@@ -1,7 +1,6 @@
 package org.martin.ktar
 
 import org.martin.ktar.TarUtils.trim
-import kotlin.collections.filter
 
 /**
  * Header
