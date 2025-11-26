@@ -55,6 +55,56 @@ class TarTest {
         Assert.assertEquals(calculateTarSize(tartest), tarFile.length())
     }
 
+    @Test
+    fun tarFileWithUTF8Name() {
+        // Russian file name, each symbol takes 2 bytes (except spaces), length is 109 bytes in UTF8,
+        // must be truncated to max 100 bytes (see TarHeader.NAMELEN)
+        // translation: "very very very very very very very long file name"
+        val fullName = "очень очень очень очень очень очень очень длинное имя файла"
+        val fullNameLength = 109
+        Assert.assertEquals(fullName.encodeToByteArray().count(), fullNameLength)
+
+        // last word should be cut off, new length should be 99 bytes
+        val truncatedName = "очень очень очень очень очень очень очень длинное имя "
+        val truncatedNameLength = 99
+        Assert.assertEquals(truncatedName.encodeToByteArray().count(), truncatedNameLength)
+
+        // create archive
+        val tarFile = dir.resolve("utf8tartest.tar")
+        val out = TarOutput(tarFile)
+        println("Tar to: $tarFile")
+
+        val tartest = dir.resolve("tartest")
+        FileSystem.SYSTEM.createDirectories(tartest)
+        println("Dir to tar: $tartest")
+
+        val content = "sample content"
+        writeStringToFile(content, tartest.resolve(fullName))
+
+        tarFolder(null, tartest, out)
+
+        out.close()
+
+        Assert.assertEquals(calculateTarSize(tartest), tarFile.length())
+
+        // untar archive
+        val destFolder = dir.resolve("untartest")
+        FileSystem.SYSTEM.createDirectories(destFolder)
+
+        val zf = FileSystem.SYSTEM.source(tarFile)
+
+        val tis = TarInput(zf.buffer())
+        untar(tis, destFolder)
+
+        tis.close()
+
+        // check file with truncated name
+        val filePathString = destFolder.resolve("tartest").toString() + tartest.toString()
+        val filePath = dir.resolve(filePathString).resolve(truncatedName)
+        val fileContent = readFile(filePath)
+        Assert.assertEquals(content, fileContent)
+    }
+
     /**
      * Untar the tar file
      */
