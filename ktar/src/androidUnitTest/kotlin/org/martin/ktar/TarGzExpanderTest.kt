@@ -3,23 +3,25 @@ package org.martin.ktar
 import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
-import org.junit.After
-import org.junit.Assert.*
-import org.junit.Before
-import org.junit.Test
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class TarGzExpanderTest {
 
     private lateinit var dir: Path
 
-    @Before
+    @BeforeTest
     fun setup() {
         dir = FileSystem.SYSTEM_TEMPORARY_DIRECTORY.resolve("targztest")
         FileSystem.SYSTEM.createDirectories(dir)
         println("Test dir: $dir")
     }
 
-    @After
+    @AfterTest
     fun tearDown() {
         FileSystem.SYSTEM.deleteRecursively(dir)
     }
@@ -30,7 +32,7 @@ class TarGzExpanderTest {
     @Test
     fun untarAndUnGzipCrosswireTarGzFile() {
         val destFolder = dir.resolve("untargzcrosswire")
-        val tarGzFile = "src/test/resources/mods.d.tar.gz".toPath()
+        val tarGzFile = "src/androidUnitTest/resources/mods.d.tar.gz".toPath()
 
         TarGzExpander().expandTarGzFile(tarGzFile, destFolder)
 
@@ -45,7 +47,7 @@ class TarGzExpanderTest {
      */
     @Test
     fun handleContentOfTarGzFile() {
-        val tarGzFile = "src/test/resources/mods.d.tar.gz".toPath()
+        val tarGzFile = "src/androidUnitTest/resources/mods.d.tar.gz".toPath()
 
         var foundBSB = false
         TarGzExpander().handleTarGzContent(tarGzFile) { name, content ->

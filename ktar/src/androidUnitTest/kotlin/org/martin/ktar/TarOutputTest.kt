@@ -3,10 +3,10 @@ package org.martin.ktar
 import okio.FileSystem
 import okio.Path
 import okio.buffer
-import org.junit.After
-import org.junit.Assert
-import org.junit.Before
-import org.junit.Test
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
 import org.martin.ktar.TestUtils.readFile
 import org.martin.ktar.TestUtils.writeStringToFile
 
@@ -15,7 +15,7 @@ class TarOutputTest {
     private lateinit var outDir: Path
     private lateinit var inDir: Path
 
-    @Before
+    @BeforeTest
     fun setup() {
         dir = FileSystem.SYSTEM_TEMPORARY_DIRECTORY.resolve("apnd")
         FileSystem.SYSTEM.createDirectories(dir)
@@ -25,7 +25,7 @@ class TarOutputTest {
         FileSystem.SYSTEM.createDirectories(inDir)
     }
 
-    @After
+    @AfterTest
     fun tearDown() {
         FileSystem.SYSTEM.deleteRecursively(dir)
         FileSystem.SYSTEM.deleteRecursively(outDir)
@@ -66,9 +66,9 @@ class TarOutputTest {
      * Make sure that the contents of the input & output dirs are identical.
      */
     private fun assertInEqualsOut() {
-        Assert.assertEquals(inDir.list().size, outDir.list()?.size)
+        assertEquals(inDir.list().size, outDir.list()?.size)
         for (inFile in inDir.list()) {
-            Assert.assertEquals(readFile(inFile), readFile(outDir.resolve(inFile.name)))
+            assertEquals(readFile(inFile), readFile(outDir.resolve(inFile.name)))
         }
     }
 

@@ -3,12 +3,10 @@ agp = "8.13.2"
 android-compileSdk = "36"
 android-minSdk = "24"
 android-targetSdk = "35"
-junit = "4.13.2"
 kotlin = "2.3.10"
 okio = "3.16.4"
 
 [libraries]
-junit = { group = "junit", name = "junit", version.ref = "junit" }
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 
 [plugins]

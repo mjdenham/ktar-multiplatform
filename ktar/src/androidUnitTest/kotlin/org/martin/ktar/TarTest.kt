@@ -4,10 +4,13 @@ import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.buffer
-import org.junit.After
-import org.junit.Assert
-import org.junit.Before
-import org.junit.Test
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+import kotlin.time.Clock
 import org.martin.ktar.TarHeader.Companion.createHeader
 import org.martin.ktar.TarUtils.calculateTarSize
 import org.martin.ktar.TestUtils.readFile
@@ -16,14 +19,14 @@ import org.martin.ktar.TestUtils.writeStringToFile
 class TarTest {
     private lateinit var dir: Path
 
-    @Before
+    @BeforeTest
     fun setup() {
         dir = FileSystem.SYSTEM_TEMPORARY_DIRECTORY.resolve("tartest")
         FileSystem.SYSTEM.createDirectories(dir)
         println("Test dir: $dir")
     }
 
-    @After
+    @AfterTest
     fun tearDown() {
         FileSystem.SYSTEM.deleteRecursively(dir)
     }
@@ -52,7 +55,7 @@ class TarTest {
 
         out.close()
 
-        Assert.assertEquals(calculateTarSize(tartest), tarFile.length())
+        assertEquals(calculateTarSize(tartest), tarFile.length())
     }
 
     @Test
@@ -62,12 +65,12 @@ class TarTest {
         // translation: "very very very very very very very long file name"
         val fullName = "очень очень очень очень очень очень очень длинное имя файла"
         val fullNameLength = 109
-        Assert.assertEquals(fullName.encodeToByteArray().count(), fullNameLength)
+        assertEquals(fullName.encodeToByteArray().count(), fullNameLength)
 
         // last word should be cut off, new length should be 99 bytes
         val truncatedName = "очень очень очень очень очень очень очень длинное имя "
         val truncatedNameLength = 99
-        Assert.assertEquals(truncatedName.encodeToByteArray().count(), truncatedNameLength)
+        assertEquals(truncatedName.encodeToByteArray().count(), truncatedNameLength)
 
         // create archive
         val tarFile = dir.resolve("utf8tartest.tar")
@@ -85,7 +88,7 @@ class TarTest {
 
         out.close()
 
-        Assert.assertEquals(calculateTarSize(tartest), tarFile.length())
+        assertEquals(calculateTarSize(tartest), tarFile.length())
 
         // untar archive
         val destFolder = dir.resolve("untartest")
@@ -102,7 +105,7 @@ class TarTest {
         val filePathString = destFolder.resolve("tartest").toString() + tartest.toString()
         val filePath = dir.resolve(filePathString).resolve(truncatedName)
         val fileContent = readFile(filePath)
-        Assert.assertEquals(content, fileContent)
+        assertEquals(content, fileContent)
     }
 
     /**
@@ -113,7 +116,7 @@ class TarTest {
         val destFolder = dir.resolve("untartest")
         FileSystem.SYSTEM.createDirectories(destFolder)
 
-        val zf = FileSystem.SYSTEM.source("src/test/resources/tartest.tar".toPath())
+        val zf = FileSystem.SYSTEM.source("src/androidUnitTest/resources/tartest.tar".toPath())
 
         val tis = TarInput(zf.buffer())
         untar(tis, destFolder)
@@ -132,7 +135,7 @@ class TarTest {
         FileSystem.SYSTEM.createDirectories(destFolder)
         println("Untar crosswire tar to: $destFolder")
 
-        val zf = FileSystem.SYSTEM.source("src/test/resources/mods.d.tar".toPath())
+        val zf = FileSystem.SYSTEM.source("src/androidUnitTest/resources/mods.d.tar".toPath())
 
         val tis = TarInput(zf.buffer())
         untar(tis, destFolder)
@@ -140,9 +143,9 @@ class TarTest {
         tis.close()
 
         val extractedFiles = destFolder.resolve("mods.d").list()
-        Assert.assertNotNull(extractedFiles)
-        Assert.assertEquals(419, extractedFiles.size)
-        Assert.assertTrue(extractedFiles.find { it.name == "bbe.conf" } != null)
+        assertNotNull(extractedFiles)
+        assertEquals(419, extractedFiles.size)
+        assertTrue(extractedFiles.find { it.name == "bbe.conf" } != null)
     }
 
     /**
@@ -153,7 +156,7 @@ class TarTest {
         val destFolder = dir.resolve("untartest/skip")
         FileSystem.SYSTEM.createDirectories(destFolder)
 
-        val zf = FileSystem.SYSTEM.source("src/test/resources/tartest.tar".toPath())
+        val zf = FileSystem.SYSTEM.source("src/androidUnitTest/resources/tartest.tar".toPath())
 
         val tis = TarInput(zf.buffer())
         tis.isDefaultSkip = true
@@ -169,15 +172,15 @@ class TarTest {
         val destFolder = dir.resolve("untartest")
         FileSystem.SYSTEM.createDirectories(destFolder)
 
-        val zf = FileSystem.SYSTEM.source("src/test/resources/tartest.tar".toPath())
+        val zf = FileSystem.SYSTEM.source("src/androidUnitTest/resources/tartest.tar".toPath())
 
         val tis = TarInput(zf.buffer())
         tis.nextEntry
-        Assert.assertEquals(TarConstants.HEADER_BLOCK.toLong(), tis.currentOffset)
+        assertEquals(TarConstants.HEADER_BLOCK.toLong(), tis.currentOffset)
         tis.nextEntry
         val entry = tis.nextEntry
         // All of the files in the tartest.tar file are smaller than DATA_BLOCK
-        Assert.assertEquals((TarConstants.HEADER_BLOCK * 3 + TarConstants.DATA_BLOCK * 2).toLong(), tis.currentOffset)
+        assertEquals((TarConstants.HEADER_BLOCK * 3 + TarConstants.DATA_BLOCK * 2).toLong(), tis.currentOffset)
         tis.close()
     }
 
@@ -266,35 +269,35 @@ class TarTest {
     fun fileEntry() {
         val fileName = "file.txt"
         val fileSize: Long = 14523
-        val modTime = System.currentTimeMillis() / 1000
+        val modTime = Clock.System.now().toEpochMilliseconds() / 1000
         val permissions = 493
 
         // Create a header object and check the fields
         val fileHeader = createHeader(fileName, fileSize, modTime, false, permissions)
-        Assert.assertEquals(fileName, fileHeader.name.toString())
-        Assert.assertEquals(TarHeader.LF_NORMAL.toLong(), fileHeader.linkFlag.toLong())
-        Assert.assertEquals(fileSize, fileHeader.size)
-        Assert.assertEquals(modTime, fileHeader.modTime)
-        Assert.assertEquals(permissions.toLong(), fileHeader.mode.toLong())
+        assertEquals(fileName, fileHeader.name.toString())
+        assertEquals(TarHeader.LF_NORMAL.toLong(), fileHeader.linkFlag.toLong())
+        assertEquals(fileSize, fileHeader.size)
+        assertEquals(modTime, fileHeader.modTime)
+        assertEquals(permissions.toLong(), fileHeader.mode.toLong())
 
         // Create an entry from the header
         val fileEntry = TarEntry(fileHeader)
-        Assert.assertEquals(fileName, fileEntry.name)
+        assertEquals(fileName, fileEntry.name)
 
         // Write the header into a buffer, create it back and compare them
         val headerBuf = ByteArray(TarConstants.HEADER_BLOCK)
         fileEntry.writeEntryHeader(headerBuf)
         val createdEntry = TarEntry(headerBuf)
-        Assert.assertTrue(fileEntry == createdEntry)
+        assertTrue(fileEntry == createdEntry)
     }
 
     private fun assertFileContents(destFolder: Path) {
-        Assert.assertEquals("HPeX2kD5kSTc7pzCDX", readFile(destFolder.resolve("tartest/one")))
-        Assert.assertEquals("gTzyuQjfhrnyX9cTBSy", readFile(destFolder.resolve("tartest/two")))
-        Assert.assertEquals("KG889vdgjPHQXUEXCqrr", readFile(destFolder.resolve("tartest/three")))
-        Assert.assertEquals("CNBDGjEJNYfms7rwxfkAJ", readFile(destFolder.resolve("tartest/four")))
-        Assert.assertEquals("tT6mFKuLRjPmUDjcVTnjBL", readFile(destFolder.resolve("tartest/five")))
-        Assert.assertEquals("jrPYpzLfWB5vZTRsSKqFvVj", readFile(destFolder.resolve("tartest/six")))
+        assertEquals("HPeX2kD5kSTc7pzCDX", readFile(destFolder.resolve("tartest/one")))
+        assertEquals("gTzyuQjfhrnyX9cTBSy", readFile(destFolder.resolve("tartest/two")))
+        assertEquals("KG889vdgjPHQXUEXCqrr", readFile(destFolder.resolve("tartest/three")))
+        assertEquals("CNBDGjEJNYfms7rwxfkAJ", readFile(destFolder.resolve("tartest/four")))
+        assertEquals("tT6mFKuLRjPmUDjcVTnjBL", readFile(destFolder.resolve("tartest/five")))
+        assertEquals("jrPYpzLfWB5vZTRsSKqFvVj", readFile(destFolder.resolve("tartest/six")))
     }
 
     companion object {

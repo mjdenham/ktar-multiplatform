@@ -43,8 +43,8 @@ kotlin {
         commonMain.dependencies {
             api(libs.okio)
         }
-        commonTest.dependencies {
-            implementation(libs.junit)
+        androidUnitTest.dependencies {
+            implementation(kotlin("test"))
         }
     }
 }
