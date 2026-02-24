@@ -32,7 +32,7 @@ class TarGzExpanderTest {
     @Test
     fun untarAndUnGzipCrosswireTarGzFile() {
         val destFolder = dir.resolve("untargzcrosswire")
-        val tarGzFile = "src/androidUnitTest/resources/mods.d.tar.gz".toPath()
+        val tarGzFile = "src/androidHostTest/resources/mods.d.tar.gz".toPath()
 
         TarGzExpander().expandTarGzFile(tarGzFile, destFolder)
 
@@ -47,7 +47,7 @@ class TarGzExpanderTest {
      */
     @Test
     fun handleContentOfTarGzFile() {
-        val tarGzFile = "src/androidUnitTest/resources/mods.d.tar.gz".toPath()
+        val tarGzFile = "src/androidHostTest/resources/mods.d.tar.gz".toPath()
 
         var foundBSB = false
         TarGzExpander().handleTarGzContent(tarGzFile) { name, content ->

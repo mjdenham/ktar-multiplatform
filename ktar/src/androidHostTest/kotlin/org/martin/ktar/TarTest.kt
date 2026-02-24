@@ -116,7 +116,7 @@ class TarTest {
         val destFolder = dir.resolve("untartest")
         FileSystem.SYSTEM.createDirectories(destFolder)
 
-        val zf = FileSystem.SYSTEM.source("src/androidUnitTest/resources/tartest.tar".toPath())
+        val zf = FileSystem.SYSTEM.source("src/androidHostTest/resources/tartest.tar".toPath())
 
         val tis = TarInput(zf.buffer())
         untar(tis, destFolder)
@@ -135,7 +135,7 @@ class TarTest {
         FileSystem.SYSTEM.createDirectories(destFolder)
         println("Untar crosswire tar to: $destFolder")
 
-        val zf = FileSystem.SYSTEM.source("src/androidUnitTest/resources/mods.d.tar".toPath())
+        val zf = FileSystem.SYSTEM.source("src/androidHostTest/resources/mods.d.tar".toPath())
 
         val tis = TarInput(zf.buffer())
         untar(tis, destFolder)
@@ -156,7 +156,7 @@ class TarTest {
         val destFolder = dir.resolve("untartest/skip")
         FileSystem.SYSTEM.createDirectories(destFolder)
 
-        val zf = FileSystem.SYSTEM.source("src/androidUnitTest/resources/tartest.tar".toPath())
+        val zf = FileSystem.SYSTEM.source("src/androidHostTest/resources/tartest.tar".toPath())
 
         val tis = TarInput(zf.buffer())
         tis.isDefaultSkip = true
@@ -172,7 +172,7 @@ class TarTest {
         val destFolder = dir.resolve("untartest")
         FileSystem.SYSTEM.createDirectories(destFolder)
 
-        val zf = FileSystem.SYSTEM.source("src/androidUnitTest/resources/tartest.tar".toPath())
+        val zf = FileSystem.SYSTEM.source("src/androidHostTest/resources/tartest.tar".toPath())
 
         val tis = TarInput(zf.buffer())
         tis.nextEntry
