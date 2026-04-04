@@ -50,28 +50,26 @@ class TarGzExpander {
     }
 
     private fun untar(tis: TarInput, destFolder: Path) {
-        var entry: TarEntry?
         val data = ByteArray(BUFFER)
-
-        while (tis.nextEntry.also { entry = it } != null) {
-            if (entry!!.isDirectory) {
-                FileSystem.SYSTEM.createDirectories(destFolder.resolve(entry!!.name))
-                continue
+        var entry: TarEntry? = tis.nextEntry
+        while (entry != null) {
+            if (entry.isDirectory) {
+                FileSystem.SYSTEM.createDirectories(destFolder.resolve(entry.name))
             } else {
-                val di = entry!!.name.lastIndexOf('/')
+                val di = entry.name.lastIndexOf('/')
                 if (di != -1) {
-                    FileSystem.SYSTEM.createDirectories(destFolder.resolve(entry!!.name.substring(0, di)))
+                    FileSystem.SYSTEM.createDirectories(destFolder.resolve(entry.name.substring(0, di)))
+                }
+                val outPath = destFolder.resolve(entry.name)
+                FileSystem.SYSTEM.sink(outPath).buffer().use { dest ->
+                    var count: Int
+                    while ((tis.read(data).also { count = it }) != -1) {
+                        dest.write(data, 0, count)
+                    }
+                    dest.flush()
                 }
             }
-
-            val outPath = destFolder.resolve(entry!!.name)
-            FileSystem.SYSTEM.sink(outPath).buffer().use { dest ->
-                var count: Int
-                while ((tis.read(data).also { count = it }) != -1) {
-                    dest.write(data, 0, count)
-                }
-                dest.flush()
-            }
+            entry = tis.nextEntry
         }
     }
 

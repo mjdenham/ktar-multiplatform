@@ -73,7 +73,7 @@ class TarHeader {
         this.name = StringBuilder()
         this.linkName = StringBuilder()
 
-        var user = "" // System.getProperty("user.name", "")
+        var user: String? = "" // System.getProperty("user.name", "")
 
         if (user!!.length > 31) user = user.substring(0, 31)
 
