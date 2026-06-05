@@ -1,8 +1,8 @@
 [versions]
-agp = "9.1.1"
+agp = "9.2.1"
 android-compileSdk = "36"
 android-minSdk = "24"
-android-targetSdk = "35"
+android-targetSdk = "36"
 kotlin = "2.3.21"
 okio = "3.17.0"
 
