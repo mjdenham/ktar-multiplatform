@@ -9,7 +9,11 @@ plugins {
 group = "org.martin"
 
 kotlin {
-    jvm()
+    jvm {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
 
     androidLibrary {
         namespace = "org.martin.ktar"
