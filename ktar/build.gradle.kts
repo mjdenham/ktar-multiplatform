@@ -56,7 +56,7 @@ mavenPublishing {
     publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
 
-    coordinates("io.github.mjdenham", "ktar", "0.1.0")
+    coordinates("io.github.mjdenham", "ktar", "0.1.1")
 
     pom {
         name.set("ktar")

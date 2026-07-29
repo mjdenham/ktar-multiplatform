@@ -206,6 +206,10 @@ entry bytes delegate to okio's `skip` instead of reading and discarding them.
 Tests live in `ktar/src/androidHostTest` and run on the JVM against real archive fixtures in
 `ktar/src/androidHostTest/resources`.
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for release history.
+
 ## Licence
 
 GNU Lesser General Public License, version 2.1 — see [LICENSE](LICENSE).
