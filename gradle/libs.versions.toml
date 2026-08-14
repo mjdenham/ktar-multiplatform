@@ -2,16 +2,14 @@
 agp = "9.3.1"
 android-compileSdk = "36"
 android-minSdk = "24"
-android-targetSdk = "36"
 kotlin = "2.4.10"
 okio = "3.18.1"
+vanniktechPublish = "0.37.0"
 
 [libraries]
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 
 [plugins]
 androidKmpLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
-kotlinAndroid = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-kotlinCocoapods = { id = "org.jetbrains.kotlin.native.cocoapods", version.ref = "kotlin" }
-
+vanniktechPublish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktechPublish" }

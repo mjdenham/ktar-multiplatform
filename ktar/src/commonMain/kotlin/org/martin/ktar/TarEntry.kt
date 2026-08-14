@@ -1,4 +1,3 @@
-
 package org.martin.ktar
 
 import okio.FileSystem
@@ -13,33 +12,43 @@ import org.martin.ktar.TarHeader.Companion.createHeader
 import org.martin.ktar.TarHeader.Companion.getNameBytes
 import org.martin.ktar.TarHeader.Companion.parseName
 
-class TarEntry {
-    var file: Path?
-        protected set
-    var header: TarHeader
-        protected set
+/**
+ * A single entry in a tar archive: its [header], and the [file] it was created from, if any.
+ */
+public class TarEntry {
+    /** The file this entry describes, or null if the entry was not created from one. */
+    public val file: Path?
 
-    private constructor() {
-        this.file = null
-        header = TarHeader()
-    }
+    /** The raw ustar header fields backing this entry. */
+    public val header: TarHeader
 
-    constructor(file: Path, entryName: String) : this() {
+    /**
+     * Creates an entry describing [file], stored in the archive as [entryName].
+     *
+     * The file's size, modification time and directory flag are read from the file system.
+     */
+    public constructor(file: Path, entryName: String) {
         this.file = file
-        this.extractTarHeader(entryName)
-    }
-
-    constructor(headerBuf: ByteArray) : this() {
-        this.parseTarHeader(headerBuf)
+        this.header = extractTarHeader(file, entryName)
     }
 
     /**
-     * Constructor to create an entry from an existing TarHeader object.
-     *
-     * This method is useful to add new entries programmatically (e.g. for
-     * adding files or directories that do not exist in the file system).
+     * Creates an entry by parsing a [TarConstants.HEADER_BLOCK] byte header block read from
+     * an archive.
      */
-    constructor(header: TarHeader) {
+    public constructor(headerBuf: ByteArray) {
+        this.file = null
+        this.header = TarHeader()
+        parseTarHeader(headerBuf)
+    }
+
+    /**
+     * Creates an entry from an existing [TarHeader].
+     *
+     * This is useful to add new entries programmatically (e.g. for adding files or directories
+     * that do not exist in the file system).
+     */
+    public constructor(header: TarHeader) {
         this.file = null
         this.header = header
     }
@@ -48,70 +57,86 @@ class TarEntry {
         if (other !is TarEntry) {
             return false
         }
-        return header.name.toString() == other.header.name.toString()
+        return header.name == other.header.name
     }
 
     override fun hashCode(): Int {
         return header.name.hashCode()
     }
 
-    fun isDescendent(desc: TarEntry): Boolean {
-        return desc.header.name.toString().startsWith(header.name.toString())
+    public fun isDescendent(desc: TarEntry): Boolean {
+        return desc.header.name.startsWith(header.name)
     }
 
-    var name: String
+    /**
+     * The full entry name, including the ustar filename prefix if the header carries one.
+     *
+     * Note that setting this does not split a long name back out into the prefix field, so
+     * setting the value returned by the getter is not necessarily a no-op for long names.
+     */
+    public var name: String
         get() {
-            var name = header.name.toString()
-            if (header.namePrefix.toString() != "") {
-                name = header.namePrefix.toString() + "/" + name
+            return if (header.namePrefix.isEmpty()) {
+                header.name
+            } else {
+                header.namePrefix + "/" + header.name
             }
-
-            return name
         }
         set(name) {
-            header.name = StringBuilder(name)
+            header.name = name
         }
 
-    var userId: Int
+    public var userId: Int
         get() = header.userId
         set(userId) {
             header.userId = userId
         }
 
-    var groupId: Int
+    public var groupId: Int
         get() = header.groupId
         set(groupId) {
             header.groupId = groupId
         }
 
-    var userName: String
-        get() = header.userName.toString()
+    public var userName: String
+        get() = header.userName
         set(userName) {
-            header.userName = StringBuilder(userName)
+            header.userName = userName
         }
 
-    var groupName: String
-        get() = header.groupName.toString()
+    public var groupName: String
+        get() = header.groupName
         set(groupName) {
-            header.groupName = StringBuilder(groupName)
+            header.groupName = groupName
         }
 
-    fun setIds(userId: Int, groupId: Int) {
+    public fun setIds(userId: Int, groupId: Int) {
         this.userId = userId
         this.groupId = groupId
     }
 
-    fun setModTime(time: Long) {
-        header.modTime = time / 1000
+    /**
+     * Sets the last modification time from a value in **milliseconds** since the Unix epoch.
+     *
+     * The header itself stores seconds ([TarHeader.modTime]), so the value is converted here.
+     */
+    public fun setModTimeMillis(timeMillis: Long) {
+        header.modTime = timeMillis / 1000
     }
 
-    var size: Long
+    public var size: Long
         get() = header.size
         set(size) {
             header.size = size
         }
 
-    val isDirectory: Boolean
+    /**
+     * Whether this entry is a directory.
+     *
+     * For an entry created from a [file] this reflects the file system; otherwise it is taken
+     * from the header's link flag or a trailing slash on the name.
+     */
+    public val isDirectory: Boolean
         get() {
             file?.let { file ->
                 return FileSystem.SYSTEM.metadata(file).isDirectory
@@ -119,39 +144,22 @@ class TarEntry {
 
             if (header.linkFlag == TarHeader.LF_DIR) return true
 
-            if (header.name.toString().endsWith("/")) return true
+            if (header.name.endsWith('/')) return true
 
             return false
         }
 
     /**
-     * Extract header from File
-     */
-    fun extractTarHeader(entryName: String) {
-        file?.let { file ->
-            val metadata = FileSystem.SYSTEM.metadata(file)
-            val permissions = defaultOkioPermissions() // okio has no permissions api so just assume READ access by default //permissions(metadata)
-            header = createHeader(entryName, metadata.size ?: 0, metadata.lastModifiedAtMillis?.div(1000) ?: 0, metadata.isDirectory, permissions)
-        } ?: throw Exception("File is null")
-    }
-
-    /**
      * Calculate checksum
      */
-    fun computeCheckSum(buf: ByteArray): Long {
-        var sum: Long = 0
-
-        for (i in buf.indices) {
-            sum += (255 and buf[i].toInt()).toLong()
-        }
-
-        return sum
+    internal fun computeCheckSum(buf: ByteArray): Long {
+        return buf.sumOf { (it.toInt() and 0xFF).toLong() }
     }
 
     /**
      * Writes the header to the byte buffer
      */
-    fun writeEntryHeader(outbuf: ByteArray) {
+    internal fun writeEntryHeader(outbuf: ByteArray) {
         var offset = 0
 
         offset = getNameBytes(header.name, outbuf, offset, TarHeader.NAMELEN)
@@ -189,7 +197,7 @@ class TarEntry {
     /**
      * Parses the tar header to the byte buffer
      */
-    fun parseTarHeader(bh: ByteArray) {
+    internal fun parseTarHeader(bh: ByteArray) {
         var offset = 0
 
         header.name = parseName(bh, offset, TarHeader.NAMELEN)
@@ -234,5 +242,23 @@ class TarEntry {
         offset += TarHeader.USTAR_DEVLEN
 
         header.namePrefix = parseName(bh, offset, TarHeader.USTAR_FILENAME_PREFIX)
+    }
+
+    private companion object {
+        /**
+         * Builds a header from a file's metadata.
+         *
+         * okio has no permissions API, so a fixed read-access mode is used.
+         */
+        fun extractTarHeader(file: Path, entryName: String): TarHeader {
+            val metadata = FileSystem.SYSTEM.metadata(file)
+            return createHeader(
+                entryName,
+                metadata.size ?: 0,
+                metadata.lastModifiedAtMillis?.div(1000) ?: 0,
+                metadata.isDirectory,
+                defaultOkioPermissions(),
+            )
+        }
     }
 }

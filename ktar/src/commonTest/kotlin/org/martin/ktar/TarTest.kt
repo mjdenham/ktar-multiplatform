@@ -2,8 +2,9 @@ package org.martin.ktar
 
 import okio.FileSystem
 import okio.Path
-import okio.Path.Companion.toPath
+import okio.SYSTEM
 import okio.buffer
+import okio.use
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -21,8 +22,7 @@ class TarTest {
 
     @BeforeTest
     fun setup() {
-        dir = FileSystem.SYSTEM_TEMPORARY_DIRECTORY.resolve("tartest")
-        FileSystem.SYSTEM.createDirectories(dir)
+        dir = TestUtils.createUniqueTestDir("tartest")
         println("Test dir: $dir")
     }
 
@@ -116,7 +116,7 @@ class TarTest {
         val destFolder = dir.resolve("untartest")
         FileSystem.SYSTEM.createDirectories(destFolder)
 
-        val zf = FileSystem.SYSTEM.source("src/androidHostTest/resources/tartest.tar".toPath())
+        val zf = FileSystem.SYSTEM.source(TestConstants.TAR_TEST_FILE)
 
         val tis = TarInput(zf.buffer())
         untar(tis, destFolder)
@@ -135,7 +135,7 @@ class TarTest {
         FileSystem.SYSTEM.createDirectories(destFolder)
         println("Untar crosswire tar to: $destFolder")
 
-        val zf = FileSystem.SYSTEM.source("src/androidHostTest/resources/mods.d.tar".toPath())
+        val zf = FileSystem.SYSTEM.source(TestConstants.CROSSWIRE_TAR_FILE)
 
         val tis = TarInput(zf.buffer())
         untar(tis, destFolder)
@@ -156,7 +156,7 @@ class TarTest {
         val destFolder = dir.resolve("untartest/skip")
         FileSystem.SYSTEM.createDirectories(destFolder)
 
-        val zf = FileSystem.SYSTEM.source("src/androidHostTest/resources/tartest.tar".toPath())
+        val zf = FileSystem.SYSTEM.source(TestConstants.TAR_TEST_FILE)
 
         val tis = TarInput(zf.buffer())
         tis.isDefaultSkip = true
@@ -172,45 +172,40 @@ class TarTest {
         val destFolder = dir.resolve("untartest")
         FileSystem.SYSTEM.createDirectories(destFolder)
 
-        val zf = FileSystem.SYSTEM.source("src/androidHostTest/resources/tartest.tar".toPath())
+        val zf = FileSystem.SYSTEM.source(TestConstants.TAR_TEST_FILE)
 
         val tis = TarInput(zf.buffer())
-        tis.nextEntry
+        assertNotNull(tis.nextEntry)
         assertEquals(TarConstants.HEADER_BLOCK.toLong(), tis.currentOffset)
-        tis.nextEntry
-        val entry = tis.nextEntry
+        assertNotNull(tis.nextEntry)
+        assertNotNull(tis.nextEntry)
         // All of the files in the tartest.tar file are smaller than DATA_BLOCK
         assertEquals((TarConstants.HEADER_BLOCK * 3 + TarConstants.DATA_BLOCK * 2).toLong(), tis.currentOffset)
         tis.close()
     }
 
     private fun untar(tis: TarInput, destFolder: Path) {
-        var entry: TarEntry?
-        while ((tis.nextEntry.also { entry = it }) != null) {
-            println("Extracting: " + entry!!.name)
-            var count: Int
-            val data = ByteArray(BUFFER)
+        val data = ByteArray(BUFFER)
+        var entry: TarEntry? = tis.nextEntry
 
-            if (entry!!.isDirectory) {
-                FileSystem.SYSTEM.createDirectories(destFolder.resolve(entry!!.name))
-                continue
+        while (entry != null) {
+            val outPath = destFolder.resolve(entry.name)
+
+            if (entry.isDirectory) {
+                FileSystem.SYSTEM.createDirectories(outPath)
             } else {
-                val di = entry!!.name.lastIndexOf('/')
-                if (di != -1) {
-                    FileSystem.SYSTEM.createDirectories(destFolder.resolve(entry!!.name.substring(0, di)))
+                outPath.parent?.let { FileSystem.SYSTEM.createDirectories(it) }
+
+                FileSystem.SYSTEM.sink(outPath).buffer().use { dest ->
+                    var count: Int
+                    while ((tis.read(data).also { count = it }) != -1) {
+                        dest.write(data, 0, count)
+                    }
+                    dest.flush()
                 }
             }
 
-            println("Writing: " + destFolder + "/" + entry!!.name)
-            val outPath = destFolder.resolve(entry!!.name)
-            val dest = FileSystem.SYSTEM.sink(outPath).buffer()
-
-            while ((tis.read(data).also { count = it }) != -1) {
-                dest.write(data, 0, count)
-            }
-
-            dest.flush()
-            dest.close()
+            entry = tis.nextEntry
         }
     }
 
@@ -274,7 +269,7 @@ class TarTest {
 
         // Create a header object and check the fields
         val fileHeader = createHeader(fileName, fileSize, modTime, false, permissions)
-        assertEquals(fileName, fileHeader.name.toString())
+        assertEquals(fileName, fileHeader.name)
         assertEquals(TarHeader.LF_NORMAL.toLong(), fileHeader.linkFlag.toLong())
         assertEquals(fileSize, fileHeader.size)
         assertEquals(modTime, fileHeader.modTime)

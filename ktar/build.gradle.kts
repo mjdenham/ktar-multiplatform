@@ -4,12 +4,17 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKmpLibrary)
-    id("com.vanniktech.maven.publish") version "0.30.0"
+    alias(libs.plugins.vanniktechPublish)
 }
 
 group = "io.github.mjdenham"
+version = providers.gradleProperty("VERSION_NAME").get()
 
 kotlin {
+    // Published library: require explicit visibility and return types on the public API so that
+    // nothing becomes part of the API surface by accident.
+    explicitApi()
+
     jvm {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
@@ -44,19 +49,26 @@ kotlin {
         commonMain.dependencies {
             api(libs.okio)
         }
-        val androidHostTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-            }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
         }
     }
 }
 
+// The test suite is compiled for every target, which type checks it against native as well as the
+// JVM, but it is only run on the JVM and Android host. The tests read fixture archives from the
+// repository's testFiles folder by relative path, and that folder is not reachable from inside the
+// iOS simulator's sandbox. Running them there would need the fixtures embedded in the test binary.
+tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest>().configureEach {
+    enabled = false
+}
+
 mavenPublishing {
-    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
+    publishToMavenCentral()
     signAllPublications()
 
-    coordinates("io.github.mjdenham", "ktar", "0.1.1")
+    // group and version come from the project, set above from VERSION_NAME
+    coordinates(artifactId = "ktar")
 
     pom {
         name.set("ktar")

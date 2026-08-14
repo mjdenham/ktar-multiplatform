@@ -13,6 +13,7 @@ It works with `okio.Path`, `okio.BufferedSource` and `okio.BufferedSink`, so it 
 - Expand `.tar.gz` archives to disk, or stream their contents into memory (`TarGzExpander`)
 - ustar (POSIX) headers, including the filename prefix field for long paths
 - UTF-8 entry names, truncated on character boundaries so code points are never split
+- Entry names that would escape the destination folder are rejected when extracting
 
 ## Supported platforms
 
@@ -29,7 +30,7 @@ It works with `okio.Path`, `okio.BufferedSource` and `okio.BufferedSink`, so it 
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.mjdenham:ktar:0.1.0")
+            implementation("io.github.mjdenham:ktar:0.2.0")
         }
     }
 }
@@ -54,6 +55,10 @@ TarGzExpander().expandTarGzFile(
     destFolder = "/data/modules".toPath(),
 )
 ```
+
+An entry whose name resolves outside `destFolder` — for example one containing `..` — is rejected
+with an `IOException` rather than being written, so archives from an untrusted source cannot write
+elsewhere on disk.
 
 ### Read .tar.gz contents without writing to disk
 
@@ -192,9 +197,9 @@ entry bytes delegate to okio's `skip` instead of reading and discarding them.
   boundary rather than failing. GNU and PAX long-name extensions are not implemented.
 - **Entry types.** Only regular files and directories are handled by the `TarGzExpander` helpers.
   Symlinks, hard links and device nodes are parsed into the header but not recreated.
-- **Untrusted archives.** Entry names are used as-is when resolving output paths — nothing in ktar
-  rejects names containing `..`. Validate that each entry resolves inside your destination directory
-  before extracting archives you did not create.
+- **Entry size.** The ustar size field holds 11 octal digits, so entries of 8 GiB or larger cannot be
+  represented. Writing one fails rather than silently recording a truncated size. GNU and PAX large
+  file extensions are not implemented.
 
 ## Building
 
@@ -203,8 +208,9 @@ entry bytes delegate to okio's `skip` instead of reading and discarding them.
 ./gradlew allTests       # tests only
 ```
 
-Tests live in `ktar/src/androidHostTest` and run on the JVM against real archive fixtures in
-`ktar/src/androidHostTest/resources`.
+Tests live in `ktar/src/commonTest` and run against real archive fixtures in `testFiles/` at the
+repository root. They are compiled for every target and run on the JVM and Android host; the iOS
+test run is disabled because the fixtures are not reachable from inside the simulator sandbox.
 
 ## Changelog
 

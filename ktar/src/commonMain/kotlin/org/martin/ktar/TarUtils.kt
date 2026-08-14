@@ -2,11 +2,12 @@ package org.martin.ktar
 
 import okio.Path
 
-object TarUtils {
+public object TarUtils {
     /**
-     * Determines the tar file size of the given folder/file path
+     * Determines the size of the tar archive that would be produced for the given file or folder,
+     * including per-entry headers, block padding and the trailing EOF record.
      */
-	fun calculateTarSize(path: Path): Long {
+    public fun calculateTarSize(path: Path): Long {
         return tarSize(path) + TarConstants.EOF_BLOCK
     }
 
@@ -47,26 +48,5 @@ object TarUtils {
         }
 
         return size
-    }
-
-	fun trim(s: String, c: Char): String {
-        val tmp = StringBuilder(s)
-        for (i in 0..<tmp.length) {
-            if (tmp[i] != c) {
-                break
-            } else {
-                tmp.deleteAt(i)
-            }
-        }
-
-        for (i in tmp.length - 1 downTo 0) {
-            if (tmp[i] != c) {
-                break
-            } else {
-                tmp.deleteAt(i)
-            }
-        }
-
-        return tmp.toString()
     }
 }

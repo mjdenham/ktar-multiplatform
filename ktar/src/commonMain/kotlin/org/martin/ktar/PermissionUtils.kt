@@ -2,20 +2,19 @@ package org.martin.ktar
 
 /**
  * Helps dealing with file permissions.
- * Unfortunately okio does not have a permissions api so we default to Read permission.
+ *
+ * okio has no permissions API, so entries created from a [okio.Path] cannot carry the real mode
+ * of the file they describe and are given read access instead. Pass an explicit mode to
+ * [TarHeader.createHeader] if you need something else.
  */
-object PermissionUtils {
+public object PermissionUtils {
 
     /**
-     * okio has no permissions api so just assume READ access by default
+     * The mode used for entries created from a file: read access for owner and group, and
+     * nothing for others (octal 0440).
      */
-    fun defaultOkioPermissions() = StandardFilePermission.READ.mode
+    public fun defaultOkioPermissions(): Int = READ_MODE
 
-    /**
-     * XXX: When using standard Java permissions, we treat 'owner' and 'group' equally and give no
-     * permissions for 'others'.
-     */
-    private enum class StandardFilePermission(val mode: Int) {
-        EXECUTE(72), WRITE(144), READ(288)
-    }
+    /** Read permission for owner and group, with none for others — octal 0440. */
+    private const val READ_MODE = 288
 }

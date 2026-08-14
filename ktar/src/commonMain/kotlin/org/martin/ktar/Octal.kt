@@ -1,6 +1,8 @@
 package org.martin.ktar
 
-object Octal {
+import okio.IOException
+
+internal object Octal {
     /**
      * Parse an octal string from a header buffer. This is used for the file
      * permission mode value.
@@ -48,9 +50,16 @@ object Octal {
      * @param length
      * The number of header bytes to parse.
      *
-     * @return The integer value of the octal bytes.
+     * @return The offset just past the field that was written, i.e. `offset + length`.
+     * @throws IOException if [value] is negative, or too large for a field of this width. A
+     * value that does not fit would otherwise be written as its truncated low order digits,
+     * silently producing a corrupt header.
      */
     fun getOctalBytes(value: Long, buf: ByteArray, offset: Int, length: Int): Int {
+        if (value < 0) {
+            throw IOException("Cannot write negative value $value to a tar header field")
+        }
+
         var idx = length - 1
 
         buf[offset + idx] = 0
@@ -62,11 +71,18 @@ object Octal {
             buf[offset + idx] = '0'.code.toByte()
             --idx
         } else {
-            var `val` = value
-            while (idx >= 0 && `val` > 0) {
-                buf[offset + idx] = ('0'.code.toByte() + (`val` and 7L).toByte()).toByte()
-                `val` = `val` shr 3
+            var remaining = value
+            while (idx >= 0 && remaining > 0) {
+                buf[offset + idx] = ('0'.code.toByte() + (remaining and 7L).toByte()).toByte()
+                remaining = remaining shr 3
                 --idx
+            }
+
+            if (remaining > 0) {
+                throw IOException(
+                    "Value $value is too large for a $length byte tar header field " +
+                        "(maximum ${maxValueFor(length)})"
+                )
             }
         }
 
@@ -76,6 +92,15 @@ object Octal {
         }
 
         return offset + length
+    }
+
+    /**
+     * The largest value a field of [length] bytes can hold. Two of the bytes are taken by the
+     * trailing space and NUL, leaving three bits of value per remaining byte.
+     */
+    private fun maxValueFor(length: Int): Long {
+        val digits = length - 2
+        return if (digits >= 21) Long.MAX_VALUE else (1L shl (digits * 3)) - 1
     }
 
     /**
@@ -89,7 +114,7 @@ object Octal {
      * The offset into the buffer from which to parse.
      * @param length
      * The number of header bytes to parse.
-     * @return The integer value of the entry's checksum.
+     * @return The offset just past the field that was written, i.e. `offset + length`.
      */
     fun getCheckSumOctalBytes(value: Long, buf: ByteArray, offset: Int, length: Int): Int {
         getOctalBytes(value, buf, offset, length)
@@ -110,7 +135,7 @@ object Octal {
      * @param length
      * The number of header bytes to parse.
      *
-     * @return The long value of the octal bytes.
+     * @return The offset just past the field that was written, i.e. `offset + length`.
      */
     fun getLongOctalBytes(value: Long, buf: ByteArray, offset: Int, length: Int): Int {
         val temp = ByteArray(length + 1)

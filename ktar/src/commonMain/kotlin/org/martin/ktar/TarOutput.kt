@@ -8,23 +8,19 @@ import okio.buffer
 import okio.IOException
 import okio.SYSTEM
 
-class TarOutput : Closeable {
-    private val out: BufferedSink
+/**
+ * Writes a tar archive to [out], one entry at a time.
+ *
+ * Call [putNextEntry], then [write] exactly `entry.size` bytes before moving on. Closing pads the
+ * final block and appends the EOF record, so the archive is only valid once it has been closed.
+ */
+public class TarOutput(private val out: BufferedSink) : Closeable {
     private var bytesWritten: Long = 0
     private var currentFileSize: Long = 0
     private var currentEntry: TarEntry? = null
 
-    constructor(out: BufferedSink) {
-        this.out = out
-        bytesWritten = 0
-        currentFileSize = 0
-    }
-
-    constructor(fout: Path) {
-        this.out = FileSystem.SYSTEM.sink(fout).buffer()
-        bytesWritten = 0
-        currentFileSize = 0
-    }
+    /** Writes the archive to [fout] on the system file system. */
+    public constructor(fout: Path) : this(FileSystem.SYSTEM.sink(fout).buffer())
 
     /**
      * Appends the EOF record and closes the stream
@@ -35,16 +31,19 @@ class TarOutput : Closeable {
         out.close()
     }
 
-    fun flush() = out.flush()
+    /** Flushes any buffered bytes to the underlying sink. */
+    public fun flush(): Unit = out.flush()
 
     /**
-     * Checks if the bytes being written exceed the current entry size.
+     * Writes [len] bytes of the current entry's content from [b] at [off].
+     *
+     * @throws IOException if this would write more bytes than the current entry declared.
      */
-    fun write(b: ByteArray, off: Int = 0, len: Int = b.size) {
-        if (currentEntry != null && !currentEntry!!.isDirectory) {
-            if (currentEntry!!.size < currentFileSize + len) {
+    public fun write(b: ByteArray, off: Int = 0, len: Int = b.size) {
+        currentEntry?.let { entry ->
+            if (!entry.isDirectory && entry.size < currentFileSize + len) {
                 throw IOException(
-                    ("The current entry[${currentEntry!!.name}] size[${currentEntry!!.size}] is smaller than the bytes[${currentFileSize + len}] being written.")
+                    "The current entry[${entry.name}] size[${entry.size}] is smaller than the bytes[${currentFileSize + len}] being written."
                 )
             }
         }
@@ -59,9 +58,11 @@ class TarOutput : Closeable {
     }
 
     /**
-     * Writes the next tar entry header on the stream
+     * Closes the previous entry and writes [entry]'s header block.
+     *
+     * @throws IOException if the previous entry has not been fully written.
      */
-    fun putNextEntry(entry: TarEntry) {
+    public fun putNextEntry(entry: TarEntry) {
         closeCurrentEntry()
 
         val header = ByteArray(TarConstants.HEADER_BLOCK)
@@ -76,11 +77,10 @@ class TarOutput : Closeable {
      * Closes the current tar entry
      */
     private fun closeCurrentEntry() {
-        if (currentEntry != null) {
-            if (currentEntry!!.size > currentFileSize) {
+        currentEntry?.let { entry ->
+            if (entry.size > currentFileSize) {
                 throw IOException(
-                    ("The current entry[" + currentEntry!!.name + "] of size["
-                            + currentEntry!!.size + "] has not been fully written.")
+                    "The current entry[${entry.name}] of size[${entry.size}] has not been fully written."
                 )
             }
 

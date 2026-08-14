@@ -2,7 +2,7 @@ package org.martin.ktar
 
 import okio.FileSystem
 import okio.Path
-import okio.Path.Companion.toPath
+import okio.SYSTEM
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -16,8 +16,7 @@ class TarGzExpanderTest {
 
     @BeforeTest
     fun setup() {
-        dir = FileSystem.SYSTEM_TEMPORARY_DIRECTORY.resolve("targztest")
-        FileSystem.SYSTEM.createDirectories(dir)
+        dir = TestUtils.createUniqueTestDir("targztest")
         println("Test dir: $dir")
     }
 
@@ -32,7 +31,7 @@ class TarGzExpanderTest {
     @Test
     fun untarAndUnGzipCrosswireTarGzFile() {
         val destFolder = dir.resolve("untargzcrosswire")
-        val tarGzFile = "src/androidHostTest/resources/mods.d.tar.gz".toPath()
+        val tarGzFile = TestConstants.CROSSWIRE_TAR_GZ_FILE
 
         TarGzExpander().expandTarGzFile(tarGzFile, destFolder)
 
@@ -47,7 +46,7 @@ class TarGzExpanderTest {
      */
     @Test
     fun handleContentOfTarGzFile() {
-        val tarGzFile = "src/androidHostTest/resources/mods.d.tar.gz".toPath()
+        val tarGzFile = TestConstants.CROSSWIRE_TAR_GZ_FILE
 
         var foundBSB = false
         TarGzExpander().handleTarGzContent(tarGzFile) { name, content ->
