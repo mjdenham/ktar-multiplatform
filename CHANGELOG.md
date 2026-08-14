@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.0] - 2026-08-13
+## [0.2.0] - 2026-08-14
 
 A tidy-up release. It fixes several defects inherited from the original jtar port, removes
 Java-isms from the public API, and gets the test suite running on the JVM as well as Android.
