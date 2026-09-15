@@ -1,9 +1,9 @@
 [versions]
-agp = "9.3.1"
+agp = "9.4.0"
 android-compileSdk = "36"
 android-minSdk = "24"
-kotlin = "2.4.10"
-okio = "3.18.1"
+kotlin = "2.4.20"
+okio = "3.18.2"
 vanniktechPublish = "0.37.0"
 
 [libraries]
